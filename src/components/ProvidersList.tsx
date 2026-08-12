@@ -27,6 +27,7 @@ export default function ProvidersList({ providers, search, onSelect, onAdd }: Pr
   const [deptFilter, setDeptFilter] = useState<string>('all');
   const [specialtyFilter, setSpecialtyFilter] = useState<string>('all');
   const [showAdd, setShowAdd] = useState(false);
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();
@@ -115,9 +116,43 @@ export default function ProvidersList({ providers, search, onSelect, onAdd }: Pr
       </div>
 
       <div className="toolbar">
-        <span className="result-count">
-          {filtered.length} of {providers.length} providers
-        </span>
+        <div className="toolbar-left">
+          <span className="result-count">
+            {filtered.length} of {providers.length} providers
+          </span>
+          <div className="view-toggle" role="group" aria-label="View mode">
+            <button
+              type="button"
+              className={`view-toggle-btn ${viewMode === 'cards' ? 'active' : ''}`}
+              onClick={() => setViewMode('cards')}
+              title="Card view"
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="7" height="7" rx="1" />
+                <rect x="14" y="3" width="7" height="7" rx="1" />
+                <rect x="3" y="14" width="7" height="7" rx="1" />
+                <rect x="14" y="14" width="7" height="7" rx="1" />
+              </svg>
+              Cards
+            </button>
+            <button
+              type="button"
+              className={`view-toggle-btn ${viewMode === 'table' ? 'active' : ''}`}
+              onClick={() => setViewMode('table')}
+              title="Table view"
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="8" y1="6" x2="21" y2="6" />
+                <line x1="8" y1="12" x2="21" y2="12" />
+                <line x1="8" y1="18" x2="21" y2="18" />
+                <line x1="3" y1="6" x2="3.01" y2="6" />
+                <line x1="3" y1="12" x2="3.01" y2="12" />
+                <line x1="3" y1="18" x2="3.01" y2="18" />
+              </svg>
+              Table
+            </button>
+          </div>
+        </div>
         <button className="btn secondary" onClick={() => setShowAdd(true)}>
           + Add Provider
         </button>
@@ -132,7 +167,7 @@ export default function ProvidersList({ providers, search, onSelect, onAdd }: Pr
             </button>
           )}
         </div>
-      ) : (
+      ) : viewMode === 'cards' ? (
         <div className="provider-cards">
           {filtered.map((p) => (
             <div key={p.id} className="provider-card" onClick={() => onSelect(p)}>
@@ -174,6 +209,81 @@ export default function ProvidersList({ providers, search, onSelect, onAdd }: Pr
               </div>
             </div>
           ))}
+        </div>
+      ) : (
+        <div className="table-wrap">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Provider</th>
+                <th>Specialty</th>
+                <th>Department</th>
+                <th>PRC #</th>
+                <th>Status</th>
+                <th>Score</th>
+                <th>Last reviewed</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((p) => (
+                <tr key={p.id} className="clickable" onClick={() => onSelect(p)}>
+                  <td>
+                    <div className="provider-cell">
+                      <span className="avatar-sm">{p.photoInitials}</span>
+                      <div>
+                        <div className="name">{p.name}</div>
+                        {p.philHealthNumber && (
+                          <div className="muted">PhilHealth {p.philHealthNumber}</div>
+                        )}
+                      </div>
+                    </div>
+                  </td>
+                  <td>{p.specialty}</td>
+                  <td>{p.department}</td>
+                  <td className="mono">{p.prcNumber}</td>
+                  <td>
+                    <span className={`badge status-${p.status}`}>{p.status}</span>
+                  </td>
+                  <td>
+                    <div className="score-bar">
+                      <span
+                        style={{
+                          fontWeight: 700,
+                          color: scoreColor(p.complianceScore),
+                          minWidth: 28,
+                        }}
+                      >
+                        {p.complianceScore}
+                      </span>
+                      <div className="score-fill">
+                        <div
+                          style={{
+                            width: `${p.complianceScore}%`,
+                            height: '100%',
+                            borderRadius: 3,
+                            background: scoreColor(p.complianceScore),
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </td>
+                  <td className="muted">{p.lastReviewed}</td>
+                  <td>
+                    <button
+                      className="btn-sm primary"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onSelect(p);
+                      }}
+                    >
+                      Open
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
 
