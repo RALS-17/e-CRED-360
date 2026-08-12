@@ -1,18 +1,7 @@
 import { useMemo, useState } from 'react';
 import type { Provider, ProviderStatus } from '../data/mockData';
 
-interface Stats {
-  totalProviders: number;
-  fullyCompliant: number;
-  expiringSoon: number;
-  expiredCredentials: number;
-  pendingVerification: number;
-  averageCompliance: number;
-  zeroExpiredCritical: boolean;
-}
-
 interface DashboardProps {
-  stats: Stats;
   providers: Provider[];
   onSelect: (p: Provider) => void;
 }
@@ -31,7 +20,6 @@ const SPECIALTIES = [
 const STATUSES: ProviderStatus[] = ['active', 'pending', 'incomplete', 'suspended'];
 
 function computeStats(list: Provider[]) {
-  const total = list.length || 1;
   const fullyCompliant = list.filter((p) => p.complianceScore >= 90).length;
   const expiringSoon = list.reduce(
     (n, p) => n + p.credentials.filter((c) => c.status === 'expiring').length,

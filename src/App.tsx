@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import './App.css';
 import { CRED_IT_STEPS, type Provider } from './data/mockData';
 import { loadProviders, saveProviders } from './lib/storage';
@@ -11,35 +11,6 @@ import Sidebar from './components/Sidebar';
 
 type Page = 'dashboard' | 'providers' | 'workflow' | 'alerts' | 'detail';
 
-function computeStats(providers: Provider[]) {
-  const fullyCompliant = providers.filter((p) => p.complianceScore >= 90).length;
-  const expiringSoon = providers.reduce(
-    (n, p) => n + p.credentials.filter((c) => c.status === 'expiring').length,
-    0
-  );
-  const expiredCredentials = providers.reduce(
-    (n, p) => n + p.credentials.filter((c) => c.status === 'expired').length,
-    0
-  );
-  const pendingVerification = providers.filter(
-    (p) => p.status === 'pending' || p.status === 'incomplete'
-  ).length;
-  const averageCompliance =
-    providers.length === 0
-      ? 0
-      : Math.round(providers.reduce((s, p) => s + p.complianceScore, 0) / providers.length);
-
-  return {
-    totalProviders: providers.length,
-    fullyCompliant,
-    expiringSoon,
-    expiredCredentials,
-    pendingVerification,
-    averageCompliance,
-    zeroExpiredCritical: expiredCredentials === 0,
-  };
-}
-
 function App() {
   const [page, setPage] = useState<Page>('dashboard');
   const [selectedProvider, setSelectedProvider] = useState<Provider | null>(null);
@@ -50,8 +21,6 @@ function App() {
   useEffect(() => {
     setProviders(loadProviders());
   }, []);
-
-  const stats = useMemo(() => computeStats(providers), [providers]);
 
   const handleSelectProvider = (p: Provider) => {
     setSelectedProvider(p);
@@ -105,7 +74,7 @@ function App() {
         <main className="main">
           <div className="content">
             {page === 'dashboard' && (
-              <Dashboard stats={stats} providers={providers} onSelect={handleSelectProvider} />
+              <Dashboard providers={providers} onSelect={handleSelectProvider} />
             )}
             {page === 'providers' && (
               <ProvidersList

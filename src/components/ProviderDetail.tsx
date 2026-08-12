@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { Provider, Credential } from '../data/mockData';
+import type { Provider } from '../data/mockData';
 
 interface Props {
   provider: Provider;
