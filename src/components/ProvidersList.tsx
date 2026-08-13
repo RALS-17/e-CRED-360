@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import type { Credential, CredentialStatus, Privilege, Provider, ProviderStatus } from '../data/mockData';
+import { useMemo, useState, type FormEvent } from 'react';
+import type { Credential, Privilege, Provider, ProviderStatus } from '../data/mockData';
 import {
   DEPARTMENTS,
   SPECIALTIES,
@@ -387,18 +387,6 @@ function scoreColor(score: number) {
   return '#dc2626';
 }
 
-function credStatusFromDates(issueDate: string, expiryDate: string): CredentialStatus {
-  if (!expiryDate) return 'pending';
-  const today = new Date();
-  const exp = new Date(expiryDate);
-  if (exp < today) return 'expired';
-  const in90 = new Date();
-  in90.setDate(in90.getDate() + 90);
-  if (exp <= in90) return 'expiring';
-  if (issueDate) return 'verified';
-  return 'pending';
-}
-
 function AddProviderModal({
   providers,
   onClose,
@@ -417,7 +405,7 @@ function AddProviderModal({
   const [complianceScore, setComplianceScore] = useState(30);
   const [error, setError] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !prcNumber.trim()) {
       setError('Name and PRC number are required.');
