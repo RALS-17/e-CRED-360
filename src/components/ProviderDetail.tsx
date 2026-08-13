@@ -11,7 +11,7 @@ interface Props {
 export default function ProviderDetail({ provider, onBack, onUpdate }: Props) {
   const defaultTab =
     provider.status === 'applicant' ? 'requirements' : 'credentials';
-  const [activeTab, setActiveTab] = useState<'requirements' | 'credentials' | 'privileges' | 'history'>(
+  const [activeTab, setActiveTab] = useState<'requirements' | 'credentials' | 'schedule' | 'privileges' | 'history'>(
     defaultTab
   );
 
@@ -171,6 +171,12 @@ export default function ProviderDetail({ provider, onBack, onUpdate }: Props) {
           Credentials
         </button>
         <button
+          className={activeTab === 'schedule' ? 'active' : ''}
+          onClick={() => setActiveTab('schedule')}
+        >
+          Schedule
+        </button>
+        <button
           className={activeTab === 'privileges' ? 'active' : ''}
           onClick={() => setActiveTab('privileges')}
         >
@@ -272,6 +278,38 @@ export default function ProviderDetail({ provider, onBack, onUpdate }: Props) {
               </li>
             ))}
           </ul>
+        </div>
+      )}
+
+
+      {activeTab === 'schedule' && (
+        <div className="table-wrap">
+          {(provider.schedules ?? []).length === 0 ? (
+            <div className="empty">No schedule on file for this provider.</div>
+          ) : (
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Day</th>
+                  <th>Time</th>
+                  <th>Location</th>
+                  <th>Activity</th>
+                  <th>Notes</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(provider.schedules ?? []).map((s) => (
+                  <tr key={s.id}>
+                    <td className="font-medium">{s.day}</td>
+                    <td className="mono">{s.time}</td>
+                    <td>{s.location}</td>
+                    <td>{s.activity}</td>
+                    <td className="muted">{s.notes || '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       )}
 

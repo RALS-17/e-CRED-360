@@ -36,6 +36,16 @@ export interface RequirementItem {
   required: boolean;
 }
 
+/** Weekly duty / clinic / OR schedule row */
+export interface ScheduleSlot {
+  id: string;
+  day: string;
+  time: string;
+  location: string;
+  activity: string;
+  notes?: string;
+}
+
 export interface Provider {
   id: string;
   name: string;
@@ -48,6 +58,8 @@ export interface Provider {
   privileges: Privilege[];
   /** Application requirements checklist (especially for applicants) */
   requirements: RequirementItem[];
+  /** Weekly schedule (clinic, OR, duty) */
+  schedules: ScheduleSlot[];
   lastReviewed: string;
   complianceScore: number;
   photoInitials: string;
@@ -123,6 +135,61 @@ export function makeApplicationRequirements(prefix: string, completedLabels: str
   });
 }
 
+
+/** Build a sample weekly schedule by department / status */
+export function makeSchedules(prefix: string, department: string, status: ProviderStatus): ScheduleSlot[] {
+  if (status === 'applicant') {
+    return [
+      { id: `${prefix}-sch-1`, day: '—', time: '—', location: '—', activity: 'No clinical schedule yet', notes: 'Pending credentialing approval' },
+    ];
+  }
+
+  const templates: Record<string, Omit<ScheduleSlot, 'id'>[]> = {
+    'Anesthesiology': [
+      { day: 'Monday', time: '07:00 – 15:00', location: 'Main OR', activity: 'OR coverage', notes: 'Elective cases' },
+      { day: 'Wednesday', time: '07:00 – 15:00', location: 'Main OR', activity: 'OR coverage' },
+      { day: 'Friday', time: '07:00 – 12:00', location: 'Ambulatory OR', activity: 'Day surgery' },
+      { day: 'Saturday', time: '08:00 – 12:00', location: 'On-call', activity: 'Anesthesia on-call', notes: 'Home call' },
+    ],
+    'Internal Medicine': [
+      { day: 'Monday', time: '09:00 – 12:00', location: 'OPD Clinic 2', activity: 'Outpatient clinic' },
+      { day: 'Tuesday', time: '13:00 – 17:00', location: 'Ward 3A', activity: 'Ward rounds' },
+      { day: 'Thursday', time: '09:00 – 12:00', location: 'OPD Clinic 2', activity: 'Outpatient clinic' },
+      { day: 'Friday', time: '08:00 – 12:00', location: 'Ward 3A', activity: 'Teaching rounds' },
+    ],
+    'Obstetrics & Gynecology': [
+      { day: 'Monday', time: '08:00 – 12:00', location: 'OB-GYN Clinic', activity: 'Prenatal clinic' },
+      { day: 'Wednesday', time: '07:00 – 15:00', location: 'Labor & Delivery / OR', activity: 'OR / CS schedule' },
+      { day: 'Thursday', time: '13:00 – 17:00', location: 'OB-GYN Clinic', activity: 'Gynecology clinic' },
+      { day: 'Sunday', time: '18:00 – 06:00', location: 'L&D', activity: 'Duty (night)', notes: 'In-house' },
+    ],
+    'Pediatrics': [
+      { day: 'Monday', time: '09:00 – 12:00', location: 'Pedia OPD', activity: 'Outpatient clinic' },
+      { day: 'Tuesday', time: '08:00 – 12:00', location: 'Pedia Ward', activity: 'Ward rounds' },
+      { day: 'Thursday', time: '09:00 – 12:00', location: 'Pedia OPD', activity: 'Outpatient clinic' },
+      { day: 'Saturday', time: '08:00 – 12:00', location: 'Pedia Ward', activity: 'Weekend duty' },
+    ],
+    'General Surgery': [
+      { day: 'Tuesday', time: '07:00 – 15:00', location: 'Main OR', activity: 'Elective surgery' },
+      { day: 'Wednesday', time: '09:00 – 12:00', location: 'Surgery Clinic', activity: 'Outpatient clinic' },
+      { day: 'Thursday', time: '07:00 – 15:00', location: 'Main OR', activity: 'Elective surgery' },
+      { day: 'Friday', time: '08:00 – 10:00', location: 'Ward 2B', activity: 'Post-op rounds' },
+    ],
+  };
+
+  const rows = templates[department] ?? [
+    { day: 'Monday', time: '09:00 – 12:00', location: 'Clinic', activity: 'Clinical duty' },
+    { day: 'Wednesday', time: '09:00 – 12:00', location: 'Clinic', activity: 'Clinical duty' },
+  ];
+
+  if (status === 'visiting') {
+    // Visiting: fewer slots
+    return rows.slice(0, 2).map((r, i) => ({ ...r, id: `${prefix}-sch-${i + 1}` }));
+  }
+
+  return rows.map((r, i) => ({ ...r, id: `${prefix}-sch-${i + 1}` }));
+}
+
 export const CRED_IT_STEPS = [
   { letter: 'C', title: 'Capture', description: 'Capture all credentials from the provider' },
   { letter: 'R', title: 'Review', description: 'Review completeness of the credential file' },
@@ -155,6 +222,7 @@ export const mockProviders: Provider[] = [
       { department: "Anesthesiology", privilege: "General anesthesia", status: 'granted', grantedDate: '2024-01-15', expiryDate: '2027-12-31' },
       { department: "Anesthesiology", privilege: "Regional anesthesia", status: 'granted', grantedDate: '2024-01-15', expiryDate: '2027-12-31' },
     ],
+    schedules: makeSchedules('P001', 'Anesthesiology', 'active'),
   },
   {
     id: 'P-002',
@@ -178,6 +246,7 @@ export const mockProviders: Provider[] = [
       { department: "Anesthesiology", privilege: "General anesthesia", status: 'granted', grantedDate: '2024-01-15', expiryDate: '2027-12-31' },
       { department: "Anesthesiology", privilege: "Regional anesthesia", status: 'granted', grantedDate: '2024-01-15', expiryDate: '2027-12-31' },
     ],
+    schedules: makeSchedules('P002', 'Anesthesiology', 'active'),
   },
   {
     id: 'P-003',
@@ -201,6 +270,7 @@ export const mockProviders: Provider[] = [
       { department: "Anesthesiology", privilege: "General anesthesia", status: 'granted', grantedDate: '2024-01-15', expiryDate: '2027-12-31' },
       { department: "Anesthesiology", privilege: "Regional anesthesia", status: 'granted', grantedDate: '2024-01-15', expiryDate: '2027-12-31' },
     ],
+    schedules: makeSchedules('P003', 'Anesthesiology', 'active'),
   },
   {
     id: 'P-004',
@@ -223,6 +293,7 @@ export const mockProviders: Provider[] = [
     privileges: [
       { department: "Anesthesiology", privilege: "Consult / assist", status: 'granted', grantedDate: '2025-06-01', expiryDate: '2026-12-31' },
     ],
+    schedules: makeSchedules('P004', 'Anesthesiology', 'visiting'),
   },
   {
     id: 'P-005',
@@ -246,6 +317,7 @@ export const mockProviders: Provider[] = [
       { department: "Internal Medicine", privilege: "Admit patients", status: 'granted', grantedDate: '2024-01-15', expiryDate: '2027-12-31' },
       { department: "Internal Medicine", privilege: "Manage medical cases", status: 'granted', grantedDate: '2024-01-15', expiryDate: '2027-12-31' },
     ],
+    schedules: makeSchedules('P005', 'Internal Medicine', 'active'),
   },
   {
     id: 'P-006',
@@ -269,6 +341,7 @@ export const mockProviders: Provider[] = [
       { department: "Internal Medicine", privilege: "Admit patients", status: 'granted', grantedDate: '2024-01-15', expiryDate: '2027-12-31' },
       { department: "Internal Medicine", privilege: "Manage medical cases", status: 'granted', grantedDate: '2024-01-15', expiryDate: '2027-12-31' },
     ],
+    schedules: makeSchedules('P006', 'Internal Medicine', 'active'),
   },
   {
     id: 'P-007',
@@ -292,6 +365,7 @@ export const mockProviders: Provider[] = [
       { department: "Internal Medicine", privilege: "Admit patients", status: 'granted', grantedDate: '2024-01-15', expiryDate: '2027-12-31' },
       { department: "Internal Medicine", privilege: "Manage medical cases", status: 'granted', grantedDate: '2024-01-15', expiryDate: '2027-12-31' },
     ],
+    schedules: makeSchedules('P007', 'Internal Medicine', 'active'),
   },
   {
     id: 'P-008',
@@ -315,6 +389,7 @@ export const mockProviders: Provider[] = [
       { department: "Internal Medicine", privilege: "Admit patients", status: 'granted', grantedDate: '2024-01-15', expiryDate: '2027-12-31' },
       { department: "Internal Medicine", privilege: "Manage medical cases", status: 'granted', grantedDate: '2024-01-15', expiryDate: '2027-12-31' },
     ],
+    schedules: makeSchedules('P008', 'Internal Medicine', 'active'),
   },
   {
     id: 'P-009',
@@ -334,6 +409,7 @@ export const mockProviders: Provider[] = [
       { id: 'c94', type: "BLS / ACLS", number: "", issuer: "", issueDate: '', expiryDate: '', status: 'missing', checked: false },
     ],
     privileges: [],
+    schedules: makeSchedules('P009', 'Internal Medicine', 'applicant'),
   },
   {
     id: 'P-010',
@@ -357,6 +433,7 @@ export const mockProviders: Provider[] = [
       { department: "Obstetrics & Gynecology", privilege: "Perform cesarean section", status: 'granted', grantedDate: '2024-01-15', expiryDate: '2027-12-31' },
       { department: "Obstetrics & Gynecology", privilege: "Gynecologic surgery", status: 'granted', grantedDate: '2024-01-15', expiryDate: '2027-12-31' },
     ],
+    schedules: makeSchedules('P010', 'Obstetrics & Gynecology', 'active'),
   },
   {
     id: 'P-011',
@@ -380,6 +457,7 @@ export const mockProviders: Provider[] = [
       { department: "Obstetrics & Gynecology", privilege: "Perform cesarean section", status: 'granted', grantedDate: '2024-01-15', expiryDate: '2027-12-31' },
       { department: "Obstetrics & Gynecology", privilege: "Gynecologic surgery", status: 'granted', grantedDate: '2024-01-15', expiryDate: '2027-12-31' },
     ],
+    schedules: makeSchedules('P011', 'Obstetrics & Gynecology', 'active'),
   },
   {
     id: 'P-012',
@@ -402,6 +480,7 @@ export const mockProviders: Provider[] = [
     privileges: [
       { department: "Obstetrics & Gynecology", privilege: "Consult / assist", status: 'granted', grantedDate: '2025-06-01', expiryDate: '2026-12-31' },
     ],
+    schedules: makeSchedules('P012', 'Obstetrics & Gynecology', 'visiting'),
   },
   {
     id: 'P-013',
@@ -425,6 +504,7 @@ export const mockProviders: Provider[] = [
       { department: "Obstetrics & Gynecology", privilege: "Perform cesarean section", status: 'granted', grantedDate: '2024-01-15', expiryDate: '2027-12-31' },
       { department: "Obstetrics & Gynecology", privilege: "Gynecologic surgery", status: 'granted', grantedDate: '2024-01-15', expiryDate: '2027-12-31' },
     ],
+    schedules: makeSchedules('P013', 'Obstetrics & Gynecology', 'active'),
   },
   {
     id: 'P-014',
@@ -448,6 +528,7 @@ export const mockProviders: Provider[] = [
       { department: "Obstetrics & Gynecology", privilege: "Perform cesarean section", status: 'granted', grantedDate: '2024-01-15', expiryDate: '2027-12-31' },
       { department: "Obstetrics & Gynecology", privilege: "Gynecologic surgery", status: 'granted', grantedDate: '2024-01-15', expiryDate: '2027-12-31' },
     ],
+    schedules: makeSchedules('P014', 'Obstetrics & Gynecology', 'active'),
   },
   {
     id: 'P-015',
@@ -470,6 +551,7 @@ export const mockProviders: Provider[] = [
     privileges: [
       { department: "Pediatrics", privilege: "Admit pediatric patients", status: 'granted', grantedDate: '2024-01-15', expiryDate: '2027-12-31' },
     ],
+    schedules: makeSchedules('P015', 'Pediatrics', 'active'),
   },
   {
     id: 'P-016',
@@ -492,6 +574,7 @@ export const mockProviders: Provider[] = [
     privileges: [
       { department: "Pediatrics", privilege: "Admit pediatric patients", status: 'granted', grantedDate: '2024-01-15', expiryDate: '2027-12-31' },
     ],
+    schedules: makeSchedules('P016', 'Pediatrics', 'active'),
   },
   {
     id: 'P-017',
@@ -514,6 +597,7 @@ export const mockProviders: Provider[] = [
     privileges: [
       { department: "Pediatrics", privilege: "Admit pediatric patients", status: 'granted', grantedDate: '2024-01-15', expiryDate: '2027-12-31' },
     ],
+    schedules: makeSchedules('P017', 'Pediatrics', 'active'),
   },
   {
     id: 'P-018',
@@ -536,6 +620,7 @@ export const mockProviders: Provider[] = [
     privileges: [
       { department: "Pediatrics", privilege: "Consult / assist", status: 'granted', grantedDate: '2025-06-01', expiryDate: '2026-12-31' },
     ],
+    schedules: makeSchedules('P018', 'Pediatrics', 'visiting'),
   },
   {
     id: 'P-019',
@@ -555,6 +640,7 @@ export const mockProviders: Provider[] = [
       { id: 'c194', type: "BLS / ACLS", number: "", issuer: "", issueDate: '', expiryDate: '', status: 'missing', checked: false },
     ],
     privileges: [],
+    schedules: makeSchedules('P019', 'Pediatrics', 'applicant'),
   },
   {
     id: 'P-020',
@@ -578,6 +664,7 @@ export const mockProviders: Provider[] = [
       { department: "General Surgery", privilege: "Perform major surgery", status: 'granted', grantedDate: '2024-01-15', expiryDate: '2027-12-31' },
       { department: "General Surgery", privilege: "Trauma surgery", status: 'granted', grantedDate: '2024-01-15', expiryDate: '2027-12-31' },
     ],
+    schedules: makeSchedules('P020', 'General Surgery', 'active'),
   },
   {
     id: 'P-021',
@@ -601,6 +688,7 @@ export const mockProviders: Provider[] = [
       { department: "General Surgery", privilege: "Perform major surgery", status: 'granted', grantedDate: '2024-01-15', expiryDate: '2027-12-31' },
       { department: "General Surgery", privilege: "Trauma surgery", status: 'granted', grantedDate: '2024-01-15', expiryDate: '2027-12-31' },
     ],
+    schedules: makeSchedules('P021', 'General Surgery', 'active'),
   },
   {
     id: 'P-022',
@@ -624,6 +712,7 @@ export const mockProviders: Provider[] = [
       { department: "General Surgery", privilege: "Perform major surgery", status: 'granted', grantedDate: '2024-01-15', expiryDate: '2027-12-31' },
       { department: "General Surgery", privilege: "Trauma surgery", status: 'granted', grantedDate: '2024-01-15', expiryDate: '2027-12-31' },
     ],
+    schedules: makeSchedules('P022', 'General Surgery', 'active'),
   },
   {
     id: 'P-023',
@@ -646,6 +735,7 @@ export const mockProviders: Provider[] = [
     privileges: [
       { department: "General Surgery", privilege: "Consult / assist", status: 'granted', grantedDate: '2025-06-01', expiryDate: '2026-12-31' },
     ],
+    schedules: makeSchedules('P023', 'General Surgery', 'visiting'),
   },
   {
     id: 'P-024',
@@ -669,6 +759,7 @@ export const mockProviders: Provider[] = [
       { department: "General Surgery", privilege: "Perform major surgery", status: 'granted', grantedDate: '2024-01-15', expiryDate: '2027-12-31' },
       { department: "General Surgery", privilege: "Trauma surgery", status: 'granted', grantedDate: '2024-01-15', expiryDate: '2027-12-31' },
     ],
+    schedules: makeSchedules('P024', 'General Surgery', 'active'),
   },
 ];
 

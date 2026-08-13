@@ -5,6 +5,7 @@ import {
   SPECIALTIES,
   STATUS_LABELS,
   makeApplicationRequirements,
+  makeSchedules,
 } from '../data/mockData';
 import { makeInitials, nextProviderId } from '../lib/storage';
 
@@ -250,6 +251,7 @@ export default function ProvidersList({ providers, search, onSelect, onAdd }: Pr
                 <th>Specialty</th>
                 <th>PRC #</th>
                 <th>Status</th>
+                <th>Schedule</th>
                 <th>Score</th>
                 <th>Last reviewed</th>
                 <th></th>
@@ -274,6 +276,13 @@ export default function ProvidersList({ providers, search, onSelect, onAdd }: Pr
                   <td className="mono">{p.prcNumber}</td>
                   <td>
                     <span className={`badge status-${p.status}`}>{STATUS_LABELS[p.status]}</span>
+                  </td>
+                  <td className="muted small">
+                    {(p.schedules ?? [])
+                      .filter((s) => s.day !== '—')
+                      .slice(0, 2)
+                      .map((s) => s.day)
+                      .join(', ') || '—'}
                   </td>
                   <td>
                     <div className="score-bar">
@@ -448,6 +457,7 @@ function AddProviderModal({
       credentials,
       privileges,
       requirements: makeApplicationRequirements(id.replace(/\D/g, '') || 'new', []),
+      schedules: makeSchedules(id.replace(/\D/g, '') || 'new', department, status),
     };
     onSave(newProvider);
   };
