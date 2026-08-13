@@ -51,7 +51,7 @@ function App() {
         <div className="brand">
           <img src="/logo.svg" alt="Global Care" className="brand-logo" />
           <div className="brand-text">
-            <span className="logo">e-CRED 360</span>
+            <span className="logo">e-CRED 100</span>
             <span className="tagline">Electronic Credentialing Compliance</span>
           </div>
         </div>

@@ -1,4 +1,4 @@
-# e-CRED 360 — Electronic Credentialing Compliance Program
+# e-CRED 100 — Electronic Credentialing Compliance Program
 
 **“No Expired Credential. No Unverified Provider. 100% Ready.”**
 
@@ -30,4 +30,4 @@ Open the URL shown by Vite (usually http://localhost:5173).
 - Vite
 - Plain CSS (no extra UI library required)
 
-Built for presentation of the e-CRED 360 quality strategy and closed-loop credentialing flow.
+Built for presentation of the e-CRED 100 quality strategy and closed-loop credentialing flow.
