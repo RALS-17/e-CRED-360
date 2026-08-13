@@ -1,7 +1,8 @@
 import type { Provider } from '../data/mockData';
 import { mockProviders } from '../data/mockData';
 
-const STORAGE_KEY = 'ecred360_providers';
+/** Bump key when schema changes so old localStorage is replaced by new mock data */
+const STORAGE_KEY = 'ecred360_providers_v3';
 
 export function loadProviders(): Provider[] {
   try {

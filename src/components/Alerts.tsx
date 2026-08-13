@@ -41,9 +41,6 @@ export default function Alerts({ providers, onSelect }: Props) {
       <div className="alert-list">
         {sorted.map((a, i) => (
           <div key={i} className={`alert-card type-${a.type}`}>
-            <div className="alert-icon">
-              {a.type === 'expired' ? 'EX' : a.type === 'expiring' ? '!' : '—'}
-            </div>
             <div className="alert-body">
               <div className="alert-title">
                 {a.credType} — <strong>{a.provider.name}</strong>

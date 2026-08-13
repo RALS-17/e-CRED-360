@@ -1,5 +1,11 @@
 import { useMemo, useState } from 'react';
 import type { Credential, CredentialStatus, Privilege, Provider, ProviderStatus } from '../data/mockData';
+import {
+  DEPARTMENTS,
+  SPECIALTIES,
+  STATUS_LABELS,
+  makeApplicationRequirements,
+} from '../data/mockData';
 import { makeInitials, nextProviderId } from '../lib/storage';
 
 interface Props {
@@ -9,25 +15,15 @@ interface Props {
   onAdd: (p: Provider) => void;
 }
 
-const DEPARTMENTS = ['Medicine', 'Surgery', 'Pediatrics', 'OB-GYN', 'Anesthesia', 'Emergency', 'ICU', 'Radiology'];
-const SPECIALTIES = [
-  'Internal Medicine',
-  'General Surgery',
-  'Pediatrics',
-  'Obstetrics & Gynecology',
-  'Anesthesiology',
-  'Emergency Medicine',
-  'Radiology',
-  'Family Medicine',
-];
-const STATUSES: ProviderStatus[] = ['active', 'pending', 'incomplete', 'suspended'];
+const STATUSES: ProviderStatus[] = ['active', 'visiting', 'applicant'];
 
 export default function ProvidersList({ providers, search, onSelect, onAdd }: Props) {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [deptFilter, setDeptFilter] = useState<string>('all');
   const [specialtyFilter, setSpecialtyFilter] = useState<string>('all');
   const [showAdd, setShowAdd] = useState(false);
-  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
+  const [viewMode, setViewMode] = useState<'folders' | 'cards' | 'table'>('folders');
+  const [collapsedDepts, setCollapsedDepts] = useState<Record<string, boolean>>({});
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();
@@ -48,6 +44,23 @@ export default function ProvidersList({ providers, search, onSelect, onAdd }: Pr
     });
   }, [providers, search, statusFilter, deptFilter, specialtyFilter]);
 
+  const byDepartment = useMemo(() => {
+    const map = new Map<string, Provider[]>();
+    for (const d of DEPARTMENTS) map.set(d, []);
+    for (const p of filtered) {
+      const list = map.get(p.department) ?? [];
+      list.push(p);
+      map.set(p.department, list);
+    }
+    // Include any unknown depts
+    for (const p of filtered) {
+      if (!map.has(p.department)) {
+        map.set(p.department, [p]);
+      }
+    }
+    return map;
+  }, [filtered]);
+
   const hasActiveFilters =
     statusFilter !== 'all' || deptFilter !== 'all' || specialtyFilter !== 'all';
 
@@ -57,12 +70,23 @@ export default function ProvidersList({ providers, search, onSelect, onAdd }: Pr
     setSpecialtyFilter('all');
   };
 
+  const toggleDept = (dept: string) => {
+    setCollapsedDepts((prev) => ({ ...prev, [dept]: !prev[dept] }));
+  };
+
+  const expandAll = () => setCollapsedDepts({});
+  const collapseAll = () => {
+    const next: Record<string, boolean> = {};
+    for (const d of DEPARTMENTS) next[d] = true;
+    setCollapsedDepts(next);
+  };
+
   return (
     <div className="page">
       <div className="page-header dash-header">
         <div>
           <h1>Provider Master List</h1>
-          <p className="subtitle">Centralized electronic credentialing database</p>
+          <p className="subtitle">Department folders · Active · Visiting · Applicant</p>
         </div>
         <div className="filter-inline">
           <select
@@ -74,7 +98,7 @@ export default function ProvidersList({ providers, search, onSelect, onAdd }: Pr
             <option value="all">All statuses</option>
             {STATUSES.map((s) => (
               <option key={s} value={s}>
-                {s.charAt(0).toUpperCase() + s.slice(1)}
+                {STATUS_LABELS[s]}
               </option>
             ))}
           </select>
@@ -123,16 +147,18 @@ export default function ProvidersList({ providers, search, onSelect, onAdd }: Pr
           <div className="view-toggle" role="group" aria-label="View mode">
             <button
               type="button"
+              className={`view-toggle-btn ${viewMode === 'folders' ? 'active' : ''}`}
+              onClick={() => setViewMode('folders')}
+              title="Department folders"
+            >
+              Folders
+            </button>
+            <button
+              type="button"
               className={`view-toggle-btn ${viewMode === 'cards' ? 'active' : ''}`}
               onClick={() => setViewMode('cards')}
               title="Card view"
             >
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="3" width="7" height="7" rx="1" />
-                <rect x="14" y="3" width="7" height="7" rx="1" />
-                <rect x="3" y="14" width="7" height="7" rx="1" />
-                <rect x="14" y="14" width="7" height="7" rx="1" />
-              </svg>
               Cards
             </button>
             <button
@@ -141,17 +167,19 @@ export default function ProvidersList({ providers, search, onSelect, onAdd }: Pr
               onClick={() => setViewMode('table')}
               title="Table view"
             >
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="8" y1="6" x2="21" y2="6" />
-                <line x1="8" y1="12" x2="21" y2="12" />
-                <line x1="8" y1="18" x2="21" y2="18" />
-                <line x1="3" y1="6" x2="3.01" y2="6" />
-                <line x1="3" y1="12" x2="3.01" y2="12" />
-                <line x1="3" y1="18" x2="3.01" y2="18" />
-              </svg>
               Table
             </button>
           </div>
+          {viewMode === 'folders' && (
+            <div className="folder-expand-btns">
+              <button type="button" className="btn-sm" onClick={expandAll}>
+                Expand all
+              </button>
+              <button type="button" className="btn-sm" onClick={collapseAll}>
+                Collapse all
+              </button>
+            </div>
+          )}
         </div>
         <button className="btn secondary" onClick={() => setShowAdd(true)}>
           + Add Provider
@@ -167,47 +195,49 @@ export default function ProvidersList({ providers, search, onSelect, onAdd }: Pr
             </button>
           )}
         </div>
+      ) : viewMode === 'folders' ? (
+        <div className="dept-folders">
+          {Array.from(byDepartment.entries())
+            .filter(([, list]) => list.length > 0 || deptFilter === 'all')
+            .map(([dept, list]) => {
+              if (list.length === 0) return null;
+              const collapsed = !!collapsedDepts[dept];
+              const activeCount = list.filter((p) => p.status === 'active').length;
+              const visitingCount = list.filter((p) => p.status === 'visiting').length;
+              const applicantCount = list.filter((p) => p.status === 'applicant').length;
+              return (
+                <div key={dept} className={`dept-folder ${collapsed ? 'collapsed' : ''}`}>
+                  <button
+                    type="button"
+                    className="dept-folder-header"
+                    onClick={() => toggleDept(dept)}
+                  >
+                    <span className="dept-folder-icon">{collapsed ? '▶' : '▼'}</span>
+                    <span className="dept-folder-name">{dept}</span>
+                    <span className="dept-folder-count">{list.length}</span>
+                    <span className="dept-folder-meta">
+                      <span className="badge status-active">{activeCount} Active</span>
+                      <span className="badge status-visiting">{visitingCount} Visiting</span>
+                      <span className="badge status-applicant">{applicantCount} Applicant</span>
+                    </span>
+                  </button>
+                  {!collapsed && (
+                    <div className="dept-folder-body">
+                      <div className="provider-cards">
+                        {list.map((p) => (
+                          <ProviderCard key={p.id} p={p} onSelect={onSelect} />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+        </div>
       ) : viewMode === 'cards' ? (
         <div className="provider-cards">
           {filtered.map((p) => (
-            <div key={p.id} className="provider-card" onClick={() => onSelect(p)}>
-              <div className="provider-card-top">
-                <span className="avatar-sm">{p.photoInitials}</span>
-                <div className="provider-card-info">
-                  <div className="provider-card-name">{p.name}</div>
-                  <div className="provider-card-meta">
-                    {p.specialty} · {p.department}
-                  </div>
-                  <div className="provider-card-meta" style={{ marginTop: 2 }}>
-                    PRC {p.prcNumber}
-                    {p.philHealthNumber ? ` · PhilHealth ${p.philHealthNumber}` : ''}
-                  </div>
-                </div>
-              </div>
-              <div className="provider-card-bottom">
-                <span className={`badge status-${p.status}`}>{p.status}</span>
-                <div className="provider-card-score">
-                  <div
-                    className="score-ring"
-                    style={{
-                      borderColor: scoreColor(p.complianceScore),
-                      color: scoreColor(p.complianceScore),
-                    }}
-                  >
-                    {p.complianceScore}
-                  </div>
-                  <button
-                    className="btn-sm primary"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onSelect(p);
-                    }}
-                  >
-                    Open
-                  </button>
-                </div>
-              </div>
-            </div>
+            <ProviderCard key={p.id} p={p} onSelect={onSelect} />
           ))}
         </div>
       ) : (
@@ -216,8 +246,8 @@ export default function ProvidersList({ providers, search, onSelect, onAdd }: Pr
             <thead>
               <tr>
                 <th>Provider</th>
-                <th>Specialty</th>
                 <th>Department</th>
+                <th>Specialty</th>
                 <th>PRC #</th>
                 <th>Status</th>
                 <th>Score</th>
@@ -239,11 +269,11 @@ export default function ProvidersList({ providers, search, onSelect, onAdd }: Pr
                       </div>
                     </div>
                   </td>
-                  <td>{p.specialty}</td>
                   <td>{p.department}</td>
+                  <td>{p.specialty}</td>
                   <td className="mono">{p.prcNumber}</td>
                   <td>
-                    <span className={`badge status-${p.status}`}>{p.status}</span>
+                    <span className={`badge status-${p.status}`}>{STATUS_LABELS[p.status]}</span>
                   </td>
                   <td>
                     <div className="score-bar">
@@ -301,13 +331,62 @@ export default function ProvidersList({ providers, search, onSelect, onAdd }: Pr
   );
 }
 
+function ProviderCard({ p, onSelect }: { p: Provider; onSelect: (p: Provider) => void }) {
+  const reqDone = p.requirements.filter((r) => r.completed).length;
+  const reqTotal = p.requirements.length;
+  return (
+    <div className="provider-card" onClick={() => onSelect(p)}>
+      <div className="provider-card-top">
+        <span className="avatar-sm">{p.photoInitials}</span>
+        <div className="provider-card-info">
+          <div className="provider-card-name">{p.name}</div>
+          <div className="provider-card-meta">
+            {p.specialty} · {p.department}
+          </div>
+          <div className="provider-card-meta" style={{ marginTop: 2 }}>
+            PRC {p.prcNumber}
+            {p.philHealthNumber ? ` · PhilHealth ${p.philHealthNumber}` : ''}
+          </div>
+        </div>
+      </div>
+      <div className="provider-card-bottom">
+        <span className={`badge status-${p.status}`}>{STATUS_LABELS[p.status]}</span>
+        {p.status === 'applicant' && (
+          <span className="muted small">
+            Req {reqDone}/{reqTotal}
+          </span>
+        )}
+        <div className="provider-card-score">
+          <div
+            className="score-ring"
+            style={{
+              borderColor: scoreColor(p.complianceScore),
+              color: scoreColor(p.complianceScore),
+            }}
+          >
+            {p.complianceScore}
+          </div>
+          <button
+            className="btn-sm primary"
+            onClick={(e) => {
+              e.stopPropagation();
+              onSelect(p);
+            }}
+          >
+            Open
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function scoreColor(score: number) {
   if (score >= 90) return '#0d9488';
   if (score >= 70) return '#d97706';
   return '#dc2626';
 }
 
-/* —— Add Provider Modal (localStorage demo) —— */
 function credStatusFromDates(issueDate: string, expiryDate: string): CredentialStatus {
   if (!expiryDate) return 'pending';
   const today = new Date();
@@ -333,31 +412,9 @@ function AddProviderModal({
   const [prcNumber, setPrcNumber] = useState('');
   const [philHealthNumber, setPhilHealthNumber] = useState('');
   const [specialty, setSpecialty] = useState(SPECIALTIES[0]);
-  const [department, setDepartment] = useState(DEPARTMENTS[0]);
-  const [status, setStatus] = useState<ProviderStatus>('pending');
-  const [complianceScore, setComplianceScore] = useState(40);
-
-  // Credential fields
-  const [prcIssue, setPrcIssue] = useState('');
-  const [prcExpiry, setPrcExpiry] = useState('');
-  const [specCertNumber, setSpecCertNumber] = useState('');
-  const [specCertIssue, setSpecCertIssue] = useState('');
-  const [specCertExpiry, setSpecCertExpiry] = useState('');
-  const [philHealthIssue, setPhilHealthIssue] = useState('');
-  const [philHealthExpiry, setPhilHealthExpiry] = useState('');
-  const [blsNumber, setBlsNumber] = useState('');
-  const [blsIssue, setBlsIssue] = useState('');
-  const [blsExpiry, setBlsExpiry] = useState('');
-  const [malpracticeNumber, setMalpracticeNumber] = useState('');
-  const [malpracticeIssue, setMalpracticeIssue] = useState('');
-  const [malpracticeExpiry, setMalpracticeExpiry] = useState('');
-
-  // Privilege
-  const [privilegeName, setPrivilegeName] = useState('Admit patients');
-  const [privilegeStatus, setPrivilegeStatus] = useState<'granted' | 'pending' | 'denied' | 'expired'>('pending');
-  const [privilegeGranted, setPrivilegeGranted] = useState('');
-  const [privilegeExpiry, setPrivilegeExpiry] = useState('');
-
+  const [department, setDepartment] = useState<string>(DEPARTMENTS[0]);
+  const [status, setStatus] = useState<ProviderStatus>('applicant');
+  const [complianceScore, setComplianceScore] = useState(30);
   const [error, setError] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -372,84 +429,25 @@ function AddProviderModal({
     }
 
     const today = new Date().toISOString().slice(0, 10);
-    const ts = Date.now();
-
+    const id = nextProviderId(providers);
     const credentials: Credential[] = [
       {
-        id: `c-${ts}-1`,
+        id: `c-${Date.now()}-1`,
         type: 'PRC License',
         number: prcNumber.trim(),
         issuer: 'Professional Regulation Commission',
-        issueDate: prcIssue,
-        expiryDate: prcExpiry,
-        status: credStatusFromDates(prcIssue, prcExpiry),
+        issueDate: '',
+        expiryDate: '',
+        status: 'pending',
+        checked: false,
       },
     ];
 
-    if (specCertNumber.trim() || specCertExpiry) {
-      credentials.push({
-        id: `c-${ts}-2`,
-        type: 'Specialty Certificate',
-        number: specCertNumber.trim() || '—',
-        issuer: 'Specialty Board',
-        issueDate: specCertIssue,
-        expiryDate: specCertExpiry,
-        status: credStatusFromDates(specCertIssue, specCertExpiry),
-      });
-    }
-
-    if (philHealthNumber.trim() || philHealthExpiry) {
-      credentials.push({
-        id: `c-${ts}-3`,
-        type: 'PhilHealth Accreditation',
-        number: philHealthNumber.trim() || '—',
-        issuer: 'PhilHealth',
-        issueDate: philHealthIssue,
-        expiryDate: philHealthExpiry,
-        status: credStatusFromDates(philHealthIssue, philHealthExpiry),
-      });
-    }
-
-    if (blsNumber.trim() || blsExpiry) {
-      credentials.push({
-        id: `c-${ts}-4`,
-        type: 'BLS / ACLS',
-        number: blsNumber.trim() || '—',
-        issuer: 'American Heart Association',
-        issueDate: blsIssue,
-        expiryDate: blsExpiry,
-        status: credStatusFromDates(blsIssue, blsExpiry),
-      });
-    }
-
-    if (malpracticeNumber.trim() || malpracticeExpiry) {
-      credentials.push({
-        id: `c-${ts}-5`,
-        type: 'Malpractice Insurance',
-        number: malpracticeNumber.trim() || '—',
-        issuer: 'Insurer',
-        issueDate: malpracticeIssue,
-        expiryDate: malpracticeExpiry,
-        status: credStatusFromDates(malpracticeIssue, malpracticeExpiry),
-      });
-    }
-
-    const privileges: Privilege[] = privilegeName.trim()
-      ? [
-          {
-            department,
-            privilege: privilegeName.trim(),
-            status: privilegeStatus,
-            grantedDate: privilegeGranted || undefined,
-            expiryDate: privilegeExpiry || undefined,
-          },
-        ]
-      : [];
-
+    const privileges: Privilege[] = [];
     const score = Math.min(100, Math.max(0, Number(complianceScore) || 0));
 
     const newProvider: Provider = {
-      id: nextProviderId(providers),
+      id,
       name: name.trim().startsWith('Dr') ? name.trim() : `Dr. ${name.trim()}`,
       specialty,
       prcNumber: prcNumber.trim(),
@@ -461,6 +459,7 @@ function AddProviderModal({
       photoInitials: makeInitials(name.trim()),
       credentials,
       privileges,
+      requirements: makeApplicationRequirements(id.replace(/\D/g, '') || 'new', []),
     };
     onSave(newProvider);
   };
@@ -479,7 +478,6 @@ function AddProviderModal({
         </div>
 
         <form onSubmit={handleSubmit} className="modal-form">
-          {/* Section: Identity */}
           <div className="form-section">
             <div className="form-section-title">Provider identity</div>
             <div className="form-grid">
@@ -513,6 +511,16 @@ function AddProviderModal({
                 />
               </div>
               <div className="form-field">
+                <span className="field-label">Department folder</span>
+                <select value={department} onChange={(e) => setDepartment(e.target.value)}>
+                  {DEPARTMENTS.map((d) => (
+                    <option key={d} value={d}>
+                      {d}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="form-field">
                 <span className="field-label">Specialty</span>
                 <select value={specialty} onChange={(e) => setSpecialty(e.target.value)}>
                   {SPECIALTIES.map((s) => (
@@ -523,21 +531,11 @@ function AddProviderModal({
                 </select>
               </div>
               <div className="form-field">
-                <span className="field-label">Department</span>
-                <select value={department} onChange={(e) => setDepartment(e.target.value)}>
-                  {DEPARTMENTS.map((d) => (
-                    <option key={d} value={d}>
-                      {d}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="form-field">
                 <span className="field-label">Status</span>
                 <select value={status} onChange={(e) => setStatus(e.target.value as ProviderStatus)}>
                   {STATUSES.map((s) => (
                     <option key={s} value={s}>
-                      {s.charAt(0).toUpperCase() + s.slice(1)}
+                      {STATUS_LABELS[s]}
                     </option>
                   ))}
                 </select>
@@ -550,173 +548,6 @@ function AddProviderModal({
                   max={100}
                   value={complianceScore}
                   onChange={(e) => setComplianceScore(Number(e.target.value))}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Section: Credentials */}
-          <div className="form-section">
-            <div className="form-section-title">Credentials</div>
-            <p className="form-section-hint">
-              Same fields shown on the provider credential table. Leave blank if not yet captured.
-            </p>
-
-            <div className="cred-block">
-              <div className="cred-block-label">PRC License</div>
-              <div className="form-grid three-col">
-                <label>
-                  Issue date
-                  <input type="date" value={prcIssue} onChange={(e) => setPrcIssue(e.target.value)} />
-                </label>
-                <label>
-                  Expiry date
-                  <input type="date" value={prcExpiry} onChange={(e) => setPrcExpiry(e.target.value)} />
-                </label>
-                <label className="readonly-field">
-                  Number
-                  <input value={prcNumber || '—'} disabled />
-                </label>
-              </div>
-            </div>
-
-            <div className="cred-block">
-              <div className="cred-block-label">Specialty Certificate</div>
-              <div className="form-grid three-col">
-                <label>
-                  Certificate #
-                  <input
-                    value={specCertNumber}
-                    onChange={(e) => setSpecCertNumber(e.target.value)}
-                    placeholder="e.g. IM-2020-100"
-                  />
-                </label>
-                <label>
-                  Issue date
-                  <input type="date" value={specCertIssue} onChange={(e) => setSpecCertIssue(e.target.value)} />
-                </label>
-                <label>
-                  Expiry date
-                  <input type="date" value={specCertExpiry} onChange={(e) => setSpecCertExpiry(e.target.value)} />
-                </label>
-              </div>
-            </div>
-
-            <div className="cred-block">
-              <div className="cred-block-label">PhilHealth Accreditation</div>
-              <div className="form-grid three-col">
-                <label>
-                  Issue date
-                  <input
-                    type="date"
-                    value={philHealthIssue}
-                    onChange={(e) => setPhilHealthIssue(e.target.value)}
-                  />
-                </label>
-                <label>
-                  Expiry date
-                  <input
-                    type="date"
-                    value={philHealthExpiry}
-                    onChange={(e) => setPhilHealthExpiry(e.target.value)}
-                  />
-                </label>
-                <label className="readonly-field">
-                  Number
-                  <input value={philHealthNumber || '—'} disabled />
-                </label>
-              </div>
-            </div>
-
-            <div className="cred-block">
-              <div className="cred-block-label">BLS / ACLS</div>
-              <div className="form-grid three-col">
-                <label>
-                  Certificate #
-                  <input value={blsNumber} onChange={(e) => setBlsNumber(e.target.value)} placeholder="optional" />
-                </label>
-                <label>
-                  Issue date
-                  <input type="date" value={blsIssue} onChange={(e) => setBlsIssue(e.target.value)} />
-                </label>
-                <label>
-                  Expiry date
-                  <input type="date" value={blsExpiry} onChange={(e) => setBlsExpiry(e.target.value)} />
-                </label>
-              </div>
-            </div>
-
-            <div className="cred-block">
-              <div className="cred-block-label">Malpractice Insurance</div>
-              <div className="form-grid three-col">
-                <label>
-                  Policy #
-                  <input
-                    value={malpracticeNumber}
-                    onChange={(e) => setMalpracticeNumber(e.target.value)}
-                    placeholder="optional"
-                  />
-                </label>
-                <label>
-                  Issue date
-                  <input
-                    type="date"
-                    value={malpracticeIssue}
-                    onChange={(e) => setMalpracticeIssue(e.target.value)}
-                  />
-                </label>
-                <label>
-                  Expiry date
-                  <input
-                    type="date"
-                    value={malpracticeExpiry}
-                    onChange={(e) => setMalpracticeExpiry(e.target.value)}
-                  />
-                </label>
-              </div>
-            </div>
-          </div>
-
-          {/* Section: Privilege */}
-          <div className="form-section">
-            <div className="form-section-title">Initial privilege</div>
-            <div className="form-grid">
-              <div className="form-field span-2">
-                <span className="field-label">Privilege</span>
-                <input
-                  value={privilegeName}
-                  onChange={(e) => setPrivilegeName(e.target.value)}
-                  placeholder="e.g. Admit patients"
-                />
-              </div>
-              <div className="form-field">
-                <span className="field-label">Status</span>
-                <select
-                  value={privilegeStatus}
-                  onChange={(e) =>
-                    setPrivilegeStatus(e.target.value as 'granted' | 'pending' | 'denied' | 'expired')
-                  }
-                >
-                  <option value="pending">Pending</option>
-                  <option value="granted">Granted</option>
-                  <option value="denied">Denied</option>
-                  <option value="expired">Expired</option>
-                </select>
-              </div>
-              <div className="form-field">
-                <span className="field-label">Granted date</span>
-                <input
-                  type="date"
-                  value={privilegeGranted}
-                  onChange={(e) => setPrivilegeGranted(e.target.value)}
-                />
-              </div>
-              <div className="form-field">
-                <span className="field-label">Expiry date</span>
-                <input
-                  type="date"
-                  value={privilegeExpiry}
-                  onChange={(e) => setPrivilegeExpiry(e.target.value)}
                 />
               </div>
             </div>

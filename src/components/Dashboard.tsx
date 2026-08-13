@@ -1,23 +1,13 @@
 import { useMemo, useState } from 'react';
 import type { Provider, ProviderStatus } from '../data/mockData';
+import { DEPARTMENTS, SPECIALTIES, STATUS_LABELS } from '../data/mockData';
 
 interface DashboardProps {
   providers: Provider[];
   onSelect: (p: Provider) => void;
 }
 
-const DEPARTMENTS = ['Medicine', 'Surgery', 'Pediatrics', 'OB-GYN', 'Anesthesia', 'Emergency', 'ICU', 'Radiology'];
-const SPECIALTIES = [
-  'Internal Medicine',
-  'General Surgery',
-  'Pediatrics',
-  'Obstetrics & Gynecology',
-  'Anesthesiology',
-  'Emergency Medicine',
-  'Radiology',
-  'Family Medicine',
-];
-const STATUSES: ProviderStatus[] = ['active', 'pending', 'incomplete', 'suspended'];
+const STATUSES: ProviderStatus[] = ['active', 'visiting', 'applicant'];
 
 function computeStats(list: Provider[]) {
   const fullyCompliant = list.filter((p) => p.complianceScore >= 90).length;
@@ -29,9 +19,7 @@ function computeStats(list: Provider[]) {
     (n, p) => n + p.credentials.filter((c) => c.status === 'expired').length,
     0
   );
-  const pendingVerification = list.filter(
-    (p) => p.status === 'pending' || p.status === 'incomplete'
-  ).length;
+  const pendingVerification = list.filter((p) => p.status === 'applicant').length;
   const averageCompliance =
     list.length === 0
       ? 0
@@ -99,7 +87,7 @@ export default function Dashboard({ providers, onSelect }: DashboardProps) {
             <option value="all">All statuses</option>
             {STATUSES.map((s) => (
               <option key={s} value={s}>
-                {s.charAt(0).toUpperCase() + s.slice(1)}
+                {STATUS_LABELS[s]}
               </option>
             ))}
           </select>
@@ -276,7 +264,7 @@ export default function Dashboard({ providers, onSelect }: DashboardProps) {
                   </div>
                 </div>
                 <div className="provider-card-bottom">
-                  <span className={`badge status-${p.status}`}>{p.status}</span>
+                  <span className={`badge status-${p.status}`}>{STATUS_LABELS[p.status]}</span>
                   <div className="provider-card-score">
                     <div
                       className="score-ring"

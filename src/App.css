@@ -1651,3 +1651,268 @@ body {
   .provider-cards { grid-template-columns: 1fr; }
   .detail-header { flex-direction: column; }
 }
+
+/* ========== DEPARTMENT FOLDERS ========== */
+.dept-folders {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dept-folder {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.dept-folder-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  background: var(--bg);
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  transition: background 0.15s;
+}
+
+.dept-folder-header:hover {
+  background: var(--primary-soft);
+}
+
+.dept-folder-icon {
+  font-size: 10px;
+  color: var(--text-muted);
+  width: 14px;
+  flex-shrink: 0;
+}
+
+.dept-folder-name {
+  font-weight: 700;
+  font-size: 14.5px;
+  color: var(--navy);
+  flex: 1;
+}
+
+.dept-folder-count {
+  background: var(--navy);
+  color: white;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 2px 9px;
+  border-radius: 999px;
+  min-width: 28px;
+  text-align: center;
+}
+
+.dept-folder-meta {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.dept-folder-body {
+  padding: 14px 16px 16px;
+  border-top: 1px solid var(--border-soft);
+}
+
+.folder-expand-btns {
+  display: flex;
+  gap: 6px;
+}
+
+/* ========== STATUS BADGES (new) ========== */
+.status-active { background: var(--success-bg); color: #0f766e; }
+.status-visiting { background: var(--info-bg); color: #1e40af; }
+.status-applicant { background: var(--warning-bg); color: #92400e; }
+.status-pending { background: var(--warning-bg); color: #92400e; }
+.status-suspended { background: var(--danger-bg); color: #991b1b; }
+.status-incomplete { background: #f1f5f9; color: #475569; }
+
+/* ========== APPLICANT PROCESS ========== */
+.applicant-process-box {
+  background: linear-gradient(135deg, #eff6ff 0%, #f0fdfa 100%);
+  border: 1px solid var(--primary-muted);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  margin-bottom: 20px;
+}
+
+.applicant-process-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.applicant-process-box h3 {
+  margin: 0 0 6px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--navy);
+}
+
+.applicant-process-box p {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--text-muted);
+  line-height: 1.55;
+  font-weight: 500;
+}
+
+.applicant-progress {
+  text-align: center;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 16px;
+  min-width: 90px;
+}
+
+.applicant-progress-num {
+  display: block;
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--primary);
+  letter-spacing: -0.5px;
+}
+
+.applicant-progress-lbl {
+  font-size: 11px;
+  color: var(--text-light);
+  font-weight: 600;
+}
+
+.applicant-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.applicant-actions .btn:disabled,
+.applicant-actions .btn.primary:disabled,
+.applicant-actions .btn.secondary:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* ========== CHECKLIST ========== */
+.checklist-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 20px 8px;
+}
+
+.checklist-header {
+  margin-bottom: 14px;
+}
+
+.checklist-header h2 {
+  margin: 0 0 6px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--navy);
+}
+
+.checklist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.checklist-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.checklist-item:last-child {
+  border-bottom: none;
+}
+
+.checklist-item.done {
+  background: transparent;
+}
+
+.checklist-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  cursor: pointer;
+  flex: 1;
+  min-width: 0;
+}
+
+.checklist-label input[type='checkbox'] {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  accent-color: var(--teal);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.checklist-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.checklist-title {
+  font-weight: 600;
+  font-size: 13.5px;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.checklist-item.done .checklist-title {
+  color: var(--text-muted);
+}
+
+.checklist-desc {
+  font-size: 12.5px;
+  color: var(--text-light);
+  font-weight: 500;
+}
+
+.checklist-meta {
+  font-size: 11.5px;
+  color: var(--teal);
+  font-weight: 600;
+}
+
+.req-tag {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  background: var(--danger-bg);
+  color: #991b1b;
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+
+.checklist-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+  padding-top: 2px;
+}
+
+.cred-checklist .checklist-item {
+  align-items: center;
+}

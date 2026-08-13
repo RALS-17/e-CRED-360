@@ -38,9 +38,15 @@ function App() {
     saveProviders(next);
   };
 
+  const handleUpdateProvider = (updated: Provider) => {
+    const next = providers.map((p) => (p.id === updated.id ? updated : p));
+    setProviders(next);
+    saveProviders(next);
+    setSelectedProvider(updated);
+  };
+
   return (
     <div className={`app ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
-      {/* Fixed header — outside sidebar, never collapses */}
       <header className="topbar">
         <div className="brand">
           <img src="/logo.svg" alt="Global Care" className="brand-logo" />
@@ -90,6 +96,7 @@ function App() {
                   providers.find((p) => p.id === selectedProvider.id) ?? selectedProvider
                 }
                 onBack={handleBack}
+                onUpdate={handleUpdateProvider}
               />
             )}
             {page === 'workflow' && <Workflow steps={CRED_IT_STEPS} />}
