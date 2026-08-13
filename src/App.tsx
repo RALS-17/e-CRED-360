@@ -51,7 +51,7 @@ function App() {
         <div className="brand">
           <img src="/logo.svg" alt="Global Care" className="brand-logo" />
           <div className="brand-text">
-            <span className="logo">e-CRED 100</span>
+            <span className="logo">e-CRED 360</span>
             <span className="tagline">Electronic Credentialing Compliance</span>
           </div>
         </div>
@@ -80,7 +80,7 @@ function App() {
         <main className="main">
           <div className="content">
             {page === 'dashboard' && (
-              <Dashboard providers={providers} onSelect={handleSelectProvider} />
+              <Dashboard providers={providers} />
             )}
             {page === 'providers' && (
               <ProvidersList

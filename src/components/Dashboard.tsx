@@ -4,7 +4,6 @@ import { DEPARTMENTS, SPECIALTIES, STATUS_LABELS } from '../data/mockData';
 
 interface DashboardProps {
   providers: Provider[];
-  onSelect: (p: Provider) => void;
 }
 
 const STATUSES: ProviderStatus[] = ['active', 'visiting', 'applicant'];
@@ -36,7 +35,7 @@ function computeStats(list: Provider[]) {
   };
 }
 
-export default function Dashboard({ providers, onSelect }: DashboardProps) {
+export default function Dashboard({ providers }: DashboardProps) {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [deptFilter, setDeptFilter] = useState<string>('all');
   const [specialtyFilter, setSpecialtyFilter] = useState<string>('all');
@@ -51,10 +50,6 @@ export default function Dashboard({ providers, onSelect }: DashboardProps) {
   }, [providers, statusFilter, deptFilter, specialtyFilter]);
 
   const stats = useMemo(() => computeStats(filteredProviders), [filteredProviders]);
-
-  const topRisk = filteredProviders
-    .filter((p) => p.complianceScore < 90)
-    .sort((a, b) => a.complianceScore - b.complianceScore);
 
   const compliantPct =
     stats.totalProviders === 0
@@ -71,7 +66,7 @@ export default function Dashboard({ providers, onSelect }: DashboardProps) {
   };
 
   return (
-    <div className="page">
+    <div className="page dashboard-page">
       <div className="page-header dash-header">
         <div>
           <h1>Dashboard</h1>
@@ -156,7 +151,7 @@ export default function Dashboard({ providers, onSelect }: DashboardProps) {
 
       {/* Secondary panels */}
       <div className="dash-panels">
-        <div className="dash-panel">
+        <div className="dash-panel dash-panel-status">
           <h3 className="panel-title">Status breakdown</h3>
           <div className="status-list">
             <div className="status-row">
@@ -201,7 +196,7 @@ export default function Dashboard({ providers, onSelect }: DashboardProps) {
           </div>
         </div>
 
-        <div className="dash-panel">
+        <div className="dash-panel dash-panel-priority">
           <h3 className="panel-title">Priority spotlight</h3>
           <div className="priority-grid">
             <div className="priority-card priority-red">
@@ -219,7 +214,7 @@ export default function Dashboard({ providers, onSelect }: DashboardProps) {
           </div>
         </div>
 
-        <div className="dash-panel">
+        <div className="dash-panel dash-panel-goal">
           <h3 className="panel-title">Compliance goal</h3>
           <div className="goal-box">
             <div className={`goal-status ${stats.zeroExpiredCritical ? 'ok' : 'alert'}`}>
@@ -232,71 +227,6 @@ export default function Dashboard({ providers, onSelect }: DashboardProps) {
         </div>
       </div>
 
-      <div className="section">
-        <h2>Providers needing attention</h2>
-        {topRisk.length === 0 ? (
-          <div className="empty-state">
-            <p>
-              {hasActiveFilters
-                ? 'No providers needing attention match your filters.'
-                : 'All shown providers are at or above 90% compliance.'}
-            </p>
-            {hasActiveFilters && (
-              <button className="btn-sm" onClick={clearFilters}>
-                Clear filters
-              </button>
-            )}
-          </div>
-        ) : (
-          <div className="provider-cards">
-            {topRisk.map((p) => (
-              <div key={p.id} className="provider-card" onClick={() => onSelect(p)}>
-                <div className="provider-card-top">
-                  <span className="avatar-sm">{p.photoInitials}</span>
-                  <div className="provider-card-info">
-                    <div className="provider-card-name">{p.name}</div>
-                    <div className="provider-card-meta">
-                      {p.specialty} · {p.department}
-                    </div>
-                    <div className="provider-card-meta" style={{ marginTop: 2 }}>
-                      PRC {p.prcNumber}
-                    </div>
-                  </div>
-                </div>
-                <div className="provider-card-bottom">
-                  <span className={`badge status-${p.status}`}>{STATUS_LABELS[p.status]}</span>
-                  <div className="provider-card-score">
-                    <div
-                      className="score-ring"
-                      style={{
-                        borderColor: scoreColor(p.complianceScore),
-                        color: scoreColor(p.complianceScore),
-                      }}
-                    >
-                      {p.complianceScore}
-                    </div>
-                    <button
-                      className="btn-sm primary"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onSelect(p);
-                      }}
-                    >
-                      Review
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
     </div>
   );
-}
-
-function scoreColor(score: number) {
-  if (score >= 90) return '#0d9488';
-  if (score >= 70) return '#d97706';
-  return '#dc2626';
 }
